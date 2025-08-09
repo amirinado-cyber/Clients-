@@ -1,1 +1,140 @@
-<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0e0f12"><title>Клиенты — быстрые заметки</title><link rel="stylesheet" href="style.css"></head><body><header><h1>Клиенты</h1><div class="right toolbar"><button class="btn small" id="btnExport">Экспорт CSV</button><label class="btn small" for="importFile">Импорт CSV</label><input id="importFile" type="file" accept=".csv" class="hidden"></div></header><div class="container"><div class="card"><div class="pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="#6b7485" stroke-width="1.6"/></svg><input id="search" placeholder="Поиск по имени, телефону, почте, заметке..." /></div><div class="toolbar"><button class="btn small" id="filterAll">Все</button><button class="btn small" id="filterToday">Сегодня</button><button class="btn small" id="filterOverdue">Просрочено</button><button class="btn small" id="filterStar">Избранные ★</button><span class="chip" id="stats"></span></div><form id="quickForm"><div class="row"><div class="half"><label>Имя</label><input id="name" placeholder="Иван" autocomplete="off"></div><div class="half"><label>Тег (опц.)</label><input id="tag" placeholder="Лид / Тёплый / Холодный"></div></div><div class="row"><div class="half"><label>Телефон</label><input id="phone" inputmode="tel" placeholder="+7..."></div><div class="half"><label>Почта</label><input id="email" inputmode="email" placeholder="mail@..."></div></div><label>Заметка</label><textarea id="note" placeholder="Кратко: что нужно, сумма, след. шаг"></textarea><div class="row"><div class="half"><label>Следующий контакт</label><input id="follow" type="datetime-local"></div><div class="half"><label>Источник (опц.)</label><select id="source"><option value="">—</option><option>Звонок</option><option>WhatsApp</option><option>Почта</option><option>Личный контакт</option><option>Реферал</option><option>Сайт</option></select></div></div><div class="actions"><button class="btn primary" type="submit">Быстро добавить</button><button class="btn" type="button" id="btnClear">Очистить</button></div></form></div><div class="list" id="list"></div></div><template id="itemTpl"><div class="item"><div class="left"><h3><span class="star" title="Избранное">☆</span> <span class="tName"></span> <span class="badge tTag hidden"></span></h3><div class="muted tMeta"></div><div class="muted tNote"></div><div class="muted tFollow"></div><div class="muted tBadgeRow"></div></div><div class="right"><div class="actions"><button class="btn small btnCall">Позвонить</button><button class="btn small btnWhats">WhatsApp</button><button class="btn small btnICS">В календарь</button><button class="btn small btnEdit">Редакт.</button><button class="btn small warn btnDel">Удалить</button></div></div></div></template><div class="install" id="installBar"><button class="btn primary" id="btnInstall">Установить приложение</button><button class="btn" id="btnDismiss">Позже</button></div><script src="script.js"></script><script>if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('service-worker.js').catch(console.error)})}let deferredPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;const bar=document.getElementById('installBar');if(bar)bar.style.display='flex'});document.getElementById('btnInstall')?.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;document.getElementById('installBar').style.display='none';deferredPrompt=null});document.getElementById('btnDismiss')?.addEventListener('click',()=>{document.getElementById('installBar').style.display='none'});</script></body></html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0e0f12">
+  <title>Клиенты — быстрые заметки</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Клиенты</h1>
+  <div class="right toolbar">
+    <button class="btn small" id="btnExportCSV">Экспорт CSV</button>
+    <button class="btn small" id="btnExportJSON">Экспорт JSON</button>
+    <label class="btn small" for="importFileCSV">Импорт CSV</label>
+    <input id="importFileCSV" type="file" accept=".csv" class="hidden">
+    <label class="btn small" for="importFileJSON">Импорт JSON</label>
+    <input id="importFileJSON" type="file" accept=".json" class="hidden">
+  </div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <div class="pill">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="#6b7485" stroke-width="1.6"/></svg>
+      <input id="search" placeholder="Поиск по имени, телефону, почте, заметке..." />
+    </div>
+    <div class="toolbar">
+      <button class="btn small" id="filterAll">Все</button>
+      <button class="btn small" id="filterToday">Сегодня</button>
+      <button class="btn small" id="filterOverdue">Просрочено</button>
+      <button class="btn small" id="filterStar">Избранные ★</button>
+      <span class="chip" id="stats"></span>
+    </div>
+    <form id="quickForm">
+      <div class="row">
+        <div class="half">
+          <label>Имя</label>
+          <input id="name" placeholder="Иван" autocomplete="off">
+        </div>
+        <div class="half">
+          <label>Тег (опц.)</label>
+          <input id="tag" placeholder="Лид / Тёплый / Холодный">
+        </div>
+      </div>
+      <div class="row">
+        <div class="half">
+          <label>Телефон</label>
+          <input id="phone" inputmode="tel" placeholder="+7...">
+        </div>
+        <div class="half">
+          <label>Почта</label>
+          <input id="email" inputmode="email" placeholder="mail@...">
+        </div>
+      </div>
+      <label>Заметка</label>
+      <textarea id="note" placeholder="Кратко: что нужно, сумма, след. шаг"></textarea>
+      <div class="row">
+        <div class="half">
+          <label>Следующий контакт</label>
+          <input id="follow" type="datetime-local">
+        </div>
+        <div class="half">
+          <label>Источник (опц.)</label>
+          <select id="source">
+            <option value="">—</option>
+            <option>Звонок</option>
+            <option>WhatsApp</option>
+            <option>Почта</option>
+            <option>Личный контакт</option>
+            <option>Реферал</option>
+            <option>Сайт</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="submit">Быстро добавить</button>
+        <button class="btn" type="button" id="btnClear">Очистить</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<template id="itemTpl">
+  <div class="item">
+    <div class="left">
+      <h3><span class="star" title="Избранное">☆</span> <span class="tName"></span> <span class="badge tTag hidden"></span></h3>
+      <div class="muted tMeta"></div>
+      <div class="muted tNote"></div>
+      <div class="muted tFollow"></div>
+      <div class="muted tBadgeRow"></div>
+    </div>
+    <div class="right">
+      <div class="actions">
+        <button class="btn small btnCall">Позвонить</button>
+        <button class="btn small btnWhats">WhatsApp</button>
+        <button class="btn small btnICS">В календарь</button>
+        <button class="btn small btnEdit">Редакт.</button>
+        <button class="btn small warn btnDel">Удалить</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<div class="install" id="installBar">
+  <button class="btn primary" id="btnInstall">Установить приложение</button>
+  <button class="btn" id="btnDismiss">Позже</button>
+</div>
+
+<script src="script.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(console.error);
+  });
+}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const bar = document.getElementById('installBar');
+  if (bar) bar.style.display = 'flex';
+});
+document.getElementById('btnInstall')?.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  document.getElementById('installBar').style.display='none';
+  deferredPrompt = null;
+});
+document.getElementById('btnDismiss')?.addEventListener('click', () => {
+  document.getElementById('installBar').style.display='none';
+});
+</script>
+</body>
+</html>
