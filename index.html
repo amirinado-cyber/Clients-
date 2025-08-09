@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0e0f12">
+<title>Клиенты — быстрые заметки</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
+    background:#0e0f12; color:#e9edf1;
+  }
+  header {
+    position: sticky; top: 0; z-index: 3;
+    background: linear-gradient(180deg, #12141a, #0e0f12);
+    padding: 12px 14px; border-bottom: 1px solid #22252b;
+    display:flex; align-items:center; gap:10px; justify-content:space-between;
+  }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: .3px; }
+  .pill {
+    background:#171a20; border:1px solid #2a2f37; padding:8px 10px; border-radius:12px;
+    display:flex; align-items:center; gap:8px; width:100%;
+  }
+  .pill input { background:transparent; border:0; outline:none; color:#e9edf1; width:100%; font-size:15px; }
+  .container { padding: 12px; }
+  .card {
+    background:#12141a; border:1px solid #22262e; border-radius:14px; padding:12px; margin-bottom:10px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.25);
+  }
+  .row { display:flex; gap:10px; }
+  .row .half { flex:1; }
+  label { font-size:12px; opacity:.8; display:block; margin:8px 2px 4px; }
+  input, textarea, select {
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2b3038;
+    background:#0b0d11; color:#e9edf1; outline:none; font-size:15px;
+  }
+  textarea { min-height:72px; resize:vertical; }
+  .btn {
+    appearance: none; border:1px solid #2c3340; background:#0b0d11; color:#e9edf1;
+    padding:11px 14px; border-radius:12px; cursor:pointer; font-weight:600;
+  }
+  .btn.primary { background:linear-gradient(180deg, #3856ff, #2844d8); border-color:#2b3cd4; }
+  .btn.warn { background:linear-gradient(180deg,#9b2d2d,#6d1f1f); border-color:#7a2323; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .list { margin-top:12px; }
+  .item {
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    padding:12px; border:1px solid #22262e; border-radius:12px; margin-bottom:8px; background:#0f1116;
+  }
+  .item h3 { margin:0 0 6px; font-size:16px; }
+  .muted { opacity:.7; font-size:13px; }
+  .badge {
+    display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #2c3340; font-size:12px; margin-right:6px;
+  }
+  .star { cursor:pointer; user-select:none; font-size:18px; line-height:1; }
+  .chip { border:1px dashed #2c3340; padding:6px 10px; border-radius:999px; font-size:12px; opacity:.9; }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 12px; }
+  .right { margin-left:auto; }
+  .hidden { display:none !important; }
+  .small { font-size:12px; }
+  .install { position:fixed; bottom:12px; left:12px; right:12px; display:none; gap:10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Клиенты</h1>
+  <div class="right toolbar">
+    <button class="btn small" id="btnExport">Экспорт CSV</button>
+    <label class="btn small" for="importFile">Импорт CSV</label>
+    <input id="importFile" type="file" accept=".csv" class="hidden">
+  </div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <div class="pill">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="#6b7485" stroke-width="1.6"/></svg>
+      <input id="search" placeholder="Поиск по имени, телефону, почте, заметке..." />
+    </div>
+    <div class="toolbar">
+      <button class="btn small" id="filterAll">Все</button>
+      <button class="btn small" id="filterToday">Сегодня</button>
+      <button class="btn small" id="filterOverdue">Просрочено</button>
+      <button class="btn small" id="filterStar">Избранные ★</button>
+      <span class="chip" id="stats"></span>
+    </div>
+    <form id="quickForm">
+      <div class="row">
+        <div class="half">
+          <label>Имя</label>
+          <input id="name" placeholder="Иван" autocomplete="off">
+        </div>
+        <div class="half">
+          <label>Тег (опц.)</label>
+          <input id="tag" placeholder="Лид / Тёплый / Холодный">
+        </div>
+      </div>
+      <div class="row">
+        <div class="half">
+          <label>Телефон</label>
+          <input id="phone" inputmode="tel" placeholder="+7...">
+        </div>
+        <div class="half">
+          <label>Почта</label>
+          <input id="email" inputmode="email" placeholder="mail@...">
+        </div>
+      </div>
+      <label>Заметка</label>
+      <textarea id="note" placeholder="Кратко: что нужно, сумма, след. шаг"></textarea>
+      <div class="row">
+        <div class="half">
+          <label>Следующий контакт</label>
+          <input id="follow" type="datetime-local">
+        </div>
+        <div class="half">
+          <label>Источник (опц.)</label>
+          <select id="source">
+            <option value="">—</option>
+            <option>Звонок</option>
+            <option>WhatsApp</option>
+            <option>Почта</option>
+            <option>Личный контакт</option>
+            <option>Реферал</option>
+            <option>Сайт</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="submit">Быстро добавить</button>
+        <button class="btn" type="button" id="btnClear">Очистить</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<template id="itemTpl">
+  <div class="item">
+    <div class="left">
+      <h3><span class="star" title="Избранное">☆</span> <span class="tName"></span> <span class="badge tTag hidden"></span></h3>
+      <div class="muted tMeta"></div>
+      <div class="muted tNote"></div>
+      <div class="muted tFollow"></div>
+      <div class="muted tBadgeRow"></div>
+    </div>
+    <div class="right">
+      <div class="actions">
+        <button class="btn small btnCall">Позвонить</button>
+        <button class="btn small btnWhats">WhatsApp</button>
+        <button class="btn small btnICS">В календарь</button>
+        <button class="btn small btnEdit">Редакт.</button>
+        <button class="btn small warn btnDel">Удалить</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<div class="install" id="installBar">
+  <button class="btn primary" id="btnInstall">Установить приложение</button>
+  <button class="btn" id="btnDismiss">Позже</button>
+</div>
+
+<script>
+const dbKey = 'client_notes_v1';
+let items = load();
+let filterMode = 'all'; // all/today/overdue/star
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(dbKey)) || []; } catch { return []; }
+}
+function save() { localStorage.setItem(dbKey, JSON.stringify(items)); }
+
+function fmtDate(dt) {
+  if (!dt) return '';
+  const d = new Date(dt);
+  if (isNaN(d)) return '';
+  return d.toLocaleString();
+}
+function todayKey(d=new Date()) {
+  return d.toISOString().slice(0,10);
+}
+function render() {
+  const q = $('#search').value.trim().toLowerCase();
+  const list = $('#list');
+  list.innerHTML = '';
+  const now = new Date();
+  const today = todayKey(now);
+  let shown = 0;
+  const tpl = $('#itemTpl').content;
+  items
+    .slice()
+    .sort((a,b) => {
+      const af = a.follow || '9999-12-31T23:59';
+      const bf = b.follow || '9999-12-31T23:59';
+      if (af !== bf) return af.localeCompare(bf);
+      return (b.created||0) - (a.created||0);
+    })
+    .forEach(it => {
+      const hay = [it.name, it.phone, it.email, it.note, it.tag].join(' ').toLowerCase();
+      if (q && !hay.includes(q)) return;
+      if (filterMode==='today' && (!it.follow || it.follow.slice(0,10)!==today)) return;
+      if (filterMode==='overdue') {
+        if (!it.follow) return;
+        if (new Date(it.follow) >= now) return;
+      }
+      if (filterMode==='star' && !it.star) return;
+
+      const el = document.importNode(tpl, true);
+      el.querySelector('.tName').textContent = it.name || '(без имени)';
+      const t = [];
+      if (it.phone) t.push('☎ ' + it.phone);
+      if (it.email) t.push('✉ ' + it.email);
+      if (it.source) t.push('Источник: ' + it.source);
+      el.querySelector('.tMeta').textContent = t.join(' · ');
+      el.querySelector('.tNote').textContent = (it.note||'').trim();
+      const tf = el.querySelector('.tFollow');
+      tf.textContent = it.follow ? ('След. контакт: ' + fmtDate(it.follow)) : '';
+      const star = el.querySelector('.star');
+      star.textContent = it.star ? '★' : '☆';
+      star.onclick = () => { it.star = !it.star; save(); render(); };
+      const tTag = el.querySelector('.tTag');
+      if (it.tag) { tTag.classList.remove('hidden'); tTag.textContent = it.tag; }
+      const badgeRow = el.querySelector('.tBadgeRow');
+      badgeRow.innerHTML = '';
+      if (it.follow) {
+        const due = new Date(it.follow);
+        const now = new Date();
+        let label = '';
+        if (due.toISOString().slice(0,10) === todayKey(now)) label = 'Сегодня';
+        else if (due < now) label = 'Просрочено';
+        else label = 'Заплан.';
+        const b = document.createElement('span'); b.className='badge'; b.textContent = label;
+        badgeRow.appendChild(b);
+      }
+
+      el.querySelector('.btnCall').onclick = () => { if (it.phone) location.href = 'tel:' + it.phone; };
+      el.querySelector('.btnWhats').onclick = () => {
+        if (!it.phone) return;
+        const p = it.phone.replace(/[^\d]/g,'');
+        const msg = encodeURIComponent((it.name?it.name+', ':'') + (it.note||''));
+        location.href = 'https://wa.me/' + p + '?text=' + msg;
+      };
+      el.querySelector('.btnICS').onclick = () => downloadICS(it);
+      el.querySelector('.btnEdit').onclick = () => editItem(it);
+      el.querySelector('.btnDel').onclick = () => {
+        if (confirm('Удалить запись?')) {
+          items = items.filter(x => x.id !== it.id);
+          save(); render();
+        }
+      };
+
+      list.appendChild(el);
+      shown++;
+    });
+  $('#stats').textContent = 'Показано: ' + shown + ' / ' + items.length;
+}
+
+function editItem(it) {
+  const name = prompt('Имя', it.name||'');
+  if (name===null) return;
+  const phone = prompt('Телефон', it.phone||'');
+  if (phone===null) return;
+  const email = prompt('Почта', it.email||'');
+  if (email===null) return;
+  const tag = prompt('Тег', it.tag||'');
+  if (tag===null) return;
+  const note = prompt('Заметка', it.note||'');
+  if (note===null) return;
+  const follow = prompt('Следующий контакт (YYYY-MM-DDTHH:MM)', it.follow||'');
+  if (follow===null) return;
+  it.name=name; it.phone=phone; it.email=email; it.tag=tag; it.note=note; it.follow=follow;
+  save(); render();
+}
+
+function uuid() { return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+$('#quickForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const it = {
+    id: uuid(),
+    created: Date.now(),
+    name: $('#name').value.trim(),
+    tag: $('#tag').value.trim(),
+    phone: $('#phone').value.trim(),
+    email: $('#email').value.trim(),
+    note: $('#note').value.trim(),
+    follow: $('#follow').value,
+    source: $('#source').value,
+    star: false,
+  };
+  items.push(it); save(); render();
+  e.target.reset();
+  $('#name').focus();
+});
+
+$('#btnClear').onclick = () => { $('#quickForm').reset(); $('#name').focus(); };
+
+$('#search').addEventListener('input', render);
+$('#filterAll').onclick = () => { filterMode='all'; render(); };
+$('#filterToday').onclick = () => { filterMode='today'; render(); };
+$('#filterOverdue').onclick = () => { filterMode='overdue'; render(); };
+$('#filterStar').onclick = () => { filterMode='star'; render(); };
+
+function exportCSV() {
+  const cols = ['id','created','name','tag','phone','email','note','follow','source','star'];
+  const rows = [cols.join(',')];
+  items.forEach(it => {
+    const line = cols.map(k => {
+      let v = it[k]; if (v===undefined || v===null) v='';
+      v = String(v).replace(/"/g,'""');
+      if (/[",\n]/.test(v)) v = '"' + v + '"';
+      return v;
+    }).join(',');
+    rows.push(line);
+  });
+  const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'clients.csv';
+  a.click();
+}
+
+function importCSV(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = reader.result;
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    if (!lines.length) return;
+    const header = lines.shift().split(',');
+    const idx = {};
+    header.forEach((h,i)=>idx[h.replace(/(^"|"$)/g,'')] = i);
+    lines.forEach(line => {
+      const cells = parseCSVLine(line);
+      const it = {
+        id: cells[idx.id] || uuid(),
+        created: Number(cells[idx.created] || Date.now()),
+        name: cells[idx.name] || '',
+        tag: cells[idx.tag] || '',
+        phone: cells[idx.phone] || '',
+        email: cells[idx.email] || '',
+        note: cells[idx.note] || '',
+        follow: cells[idx.follow] || '',
+        source: cells[idx.source] || '',
+        star: (cells[idx.star]||'').toLowerCase()==='true',
+      };
+      items.push(it);
+    });
+    save(); render();
+  };
+  reader.readAsText(file);
+}
+function parseCSVLine(line) {
+  const out = []; let cur = ''; let q=false;
+  for (let i=0;i<line.length;i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i+1]==='"') { cur+='"'; i++; }
+      else if (ch === '"') { q=false; }
+      else { cur+=ch; }
+    } else {
+      if (ch === ',') { out.push(cur); cur=''; }
+      else if (ch === '"') { q=true; }
+      else { cur+=ch; }
+    }
+  }
+  out.push(cur);
+  return out;
+}
+
+$('#btnExport').onclick = exportCSV;
+$('#importFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) importCSV(file);
+});
+
+function pad(n){return String(n).padStart(2,'0');}
+function downloadICS(it){
+  if(!it.follow){ alert('Установи дату/время следующего контакта.'); return; }
+  const dt = new Date(it.follow);
+  if(isNaN(dt)){ alert('Некорректная дата.'); return; }
+  const dtStart = dt.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const dtEnd = new Date(dt.getTime()+30*60*1000).toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const title = `Follow-up: ${it.name||'клиент'}`;
+  const desc = (it.note||'') + (it.phone? ` | Тел.: ${it.phone}`:'') + (it.email? ` | Почта: ${it.email}`:'');
+  const ics = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ClientNotes//RU//EN',
+    'BEGIN:VEVENT',
+    'UID:'+it.id+'@clientnotes',
+    'DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z',
+    'DTSTART:'+dtStart,
+    'DTEND:'+dtEnd,
+    'SUMMARY:'+escapeICS(title),
+    'DESCRIPTION:'+escapeICS(desc),
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+  const blob = new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'followup.ics';
+  a.click();
+}
+function escapeICS(s){ return String(s).replace(/([,;])/g,'\\$1').replace(/\n/g,'\\n'); }
+
+// PWA: register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(console.error);
+  });
+}
+
+// PWA: prompt install (Android/desktop)
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const bar = document.getElementById('installBar');
+  if (bar) bar.style.display = 'flex';
+});
+document.getElementById('btnInstall')?.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  document.getElementById('installBar').style.display='none';
+  deferredPrompt = null;
+});
+document.getElementById('btnDismiss')?.addEventListener('click', () => {
+  document.getElementById('installBar').style.display='none';
+});
+
+// Initial render
+render();
+</script>
+</body>
+</html>
